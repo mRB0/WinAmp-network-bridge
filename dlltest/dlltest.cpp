@@ -8,7 +8,6 @@
 #include <sstream>
 
 #include <Winamp\IN2.H>
-#include "dlltest.pb.h"
 
 #define MAX_LOADSTRING 100
 

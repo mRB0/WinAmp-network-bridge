@@ -118,17 +118,6 @@
     <Image Include="dlltest.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="dlltest.proto">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Users\mrb\Documents\Apps\protobuf\protoc --proto_path=$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compile protobuf</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(Filename).pb.h;$(ProjectDir)%(Filename).pb.cc</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\Users\mrb\Documents\Apps\protobuf\protoc --proto_path=$(ProjectDir) --cpp_out=$(ProjectDir) %(FullPath)</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compile protobuf</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(Filename).pb.h;$(ProjectDir)%(Filename).pb.cc</Outputs>
-    </CustomBuild>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
