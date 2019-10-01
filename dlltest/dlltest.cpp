@@ -3,11 +3,12 @@
 
 #include "stdafx.h"
 #include "dlltest.h"
+#include <iostream>
 #include <cstdio>
 #include <string>
 #include <sstream>
 
-#include <Winamp\IN2.H>
+#include <winamp/in2.h>
 
 #define MAX_LOADSTRING 100
 
@@ -143,7 +144,7 @@ void logLastError(std::wstring const &text) {
 
 	std::wostringstream dbg;
 	dbg << L"Error: " << text << ": " << (LPTSTR)lpMsgBuf << std::endl;
-	OutputDebugString(dbg.str().c_str());
+	OutputDebugStringW(dbg.str().c_str());
 
 	LocalFree(lpMsgBuf);
 }
@@ -168,8 +169,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 		{
-			SetDllDirectory(L"C:\\Users\\mrb\\Documents\\code\\dlltest");
-			HMODULE pluginDll = LoadLibrary(L"in_vgm.dll");
+
+			std::wcout << L"Thanks!" << std::endl;
+
+			SetDllDirectoryW(L"Z:\\users\\mrb\\code\\dlltest");
+			HMODULE pluginDll = LoadLibraryW(L"in_vgm.dll");
 
 			if (pluginDll) {
 				GetInModuleFn getInModuleFn = (GetInModuleFn)GetProcAddress(pluginDll, "winampGetInModule2");
@@ -182,7 +186,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 					std::wostringstream dbg;
 					dbg << L"Module description: " << pluginModule->description << std::endl;
-					OutputDebugString(dbg.str().c_str());
+					OutputDebugStringW(dbg.str().c_str());
 			
 					pluginModule->Init();
 

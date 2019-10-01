@@ -1,0 +1,26 @@
+:Base SNESamp.hlp
+:Title SNESamp Help
+1 Introduction
+2 ReadMe=HELP_README
+2 History=History
+2 What is the SPC700?=SPC700
+2 Links=Links
+2 Thanks=Thanks
+2 Uninstalling=Uninstall
+1 Configuration
+2 What is it?=Cfg_Help
+2 DSP=Cfg_DSP
+2 Mixing=Cfg_Mixing
+2 Time=Cfg_Time
+2 Title=Cfg_Title
+2 Other=Cfg_Other
+1 Control Dialog
+2 What is it?=Ctrl_Help
+2 Keyboard Shortcuts=Ctrl_Keys
+2 Popup menu=Ctrl_Popup
+2 Controls=Ctrl_Control
+1 ID666 Tag Editor
+2 What is it?=ID6_Help
+2 Information=ID6_Info
+2 ID666=ID6_ID666
+2 Extended=ID6_Ext
