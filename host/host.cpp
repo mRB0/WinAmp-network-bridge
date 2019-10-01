@@ -1,8 +1,8 @@
-// dlltest.cpp : Defines the entry point for the application.
+// host.cpp : Defines the entry point for the application.
 //
 
 #include "stdafx.h"
-#include "dlltest.h"
+#include "host.h"
 #include <iostream>
 #include <cstdio>
 #include <string>
@@ -172,7 +172,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			std::wcout << L"Thanks!" << std::endl;
 
-			SetDllDirectoryW(L"Z:\\users\\mrb\\code\\dlltest");
+			SetDllDirectoryW(L"Z:\\users\\mrb\\code\\host");
 			HMODULE pluginDll = LoadLibraryW(L"in_vgm.dll");
 
 			if (pluginDll) {

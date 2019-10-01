@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by dlltest.rc
+// Used by host.rc
 //
 
 #define IDS_APP_TITLE			103
