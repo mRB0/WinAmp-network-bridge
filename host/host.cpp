@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include <memory>
 
 #include <winamp/in2.h>
 
@@ -15,7 +16,7 @@
 typedef In_Module *(__stdcall *GetInModuleFn)(void);
 
 // Global Variables:
-HINSTANCE hInst;								// current instance
+static HINSTANCE hInst;								// current instance
 TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
 
@@ -24,6 +25,10 @@ ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
+
+struct WindowState {
+	std::wstring why;
+};
 
 HMODULE pluginDll;
 In_Module *pluginModule;
@@ -42,7 +47,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_DLLTEST, szWindowClass, MAX_LOADSTRING);
+	LoadString(hInstance, IDC_HOST, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
 	// Perform application initialization:
@@ -51,7 +56,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_DLLTEST));
+	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_HOST));
 
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
@@ -86,11 +91,11 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
-	//wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_DLLTEST));
+	//wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HOST));
 	wcex.hIcon			= LoadIcon(NULL, IDI_APPLICATION);
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_DLLTEST);
+	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_HOST);
 	wcex.lpszClassName	= szWindowClass;
 	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 	//wcex.hIconSm		= LoadIcon(NULL, IDI_APPLICATION);
@@ -114,8 +119,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    hInst = hInstance; // Store instance handle in our global variable
 
+   auto windowState = new std::shared_ptr<WindowState>(new WindowState {
+	std::wstring(L"oh gosh")
+   });
+
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, reinterpret_cast<void*>(windowState));
 
    if (!hWnd)
    {
@@ -161,65 +170,74 @@ void logLastError(std::wstring const &text) {
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	int wmId, wmEvent;
-	PAINTSTRUCT ps;
-	HDC hdc;
 
 	switch (message)
 	{
 	case WM_CREATE:
-		{
+	{
+		std::shared_ptr<WindowState> *window_state_from_create_struct = reinterpret_cast<std::shared_ptr<WindowState> *>((reinterpret_cast<CREATESTRUCT*>(lParam))->lpCreateParams);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window_state_from_create_struct));
 
-			std::wcout << L"Thanks!" << std::endl;
+		std::shared_ptr<WindowState> ws(*window_state_from_create_struct);
 
-			SetDllDirectoryW(L"Z:\\users\\mrb\\code\\host");
-			HMODULE pluginDll = LoadLibraryW(L"in_vgm.dll");
+		OutputDebugStringW(L"Why???: ");
+		OutputDebugStringW(ws->why.c_str());
+		OutputDebugStringW(L"\n");
 
-			if (pluginDll) {
-				GetInModuleFn getInModuleFn = (GetInModuleFn)GetProcAddress(pluginDll, "winampGetInModule2");
+		std::wcout << L"Thanks!" << std::endl;
+		OutputDebugStringW(L"Gonna load that dll\n");
 
-				if (getInModuleFn) {
-					pluginModule = getInModuleFn();
+		SetDllDirectoryW(L"C:\\Users\\mrb\\Documents\\code\\winamp-network-bridge\\plugins");
+		HMODULE pluginDll = LoadLibraryW(L"in_vgm.dll");
 
-					pluginModule->hMainWindow = hWnd;
-					pluginModule->hDllInstance = pluginDll;
+		if (pluginDll) {
+			GetInModuleFn getInModuleFn = (GetInModuleFn)GetProcAddress(pluginDll, "winampGetInModule2");
 
-					std::wostringstream dbg;
-					dbg << L"Module description: " << pluginModule->description << std::endl;
-					OutputDebugStringW(dbg.str().c_str());
-			
-					pluginModule->Init();
+			if (getInModuleFn) {
+				pluginModule = getInModuleFn();
 
-					CreateWindow(TEXT("button"), 
-						TEXT("About"),
-						WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-						0, 0,
-						60, 40,
-						hWnd,
-						(HMENU)ID_ABOUTBUTTON,
-						((LPCREATESTRUCT)lParam)->hInstance,
-						NULL);
+				pluginModule->hMainWindow = hWnd;
+				pluginModule->hDllInstance = pluginDll;
 
-					CreateWindow(TEXT("button"), 
-						TEXT("Config"),
-						WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-						0, 40,
-						60, 40,
-						hWnd,
-						(HMENU)ID_CONFIGBUTTON,
-						((LPCREATESTRUCT)lParam)->hInstance,
-						NULL);
+				std::wostringstream dbg;
+				dbg << L"Module description: " << pluginModule->description << std::endl;
+				OutputDebugStringW(dbg.str().c_str());
 
-				}
-			} else {
-				logLastError(L"Couldn't load dll");
+				pluginModule->Init();
+
+				CreateWindow(TEXT("button"),
+					TEXT("About"),
+					WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+					0, 0,
+					60, 40,
+					hWnd,
+					(HMENU)ID_ABOUTBUTTON,
+					((LPCREATESTRUCT)lParam)->hInstance,
+					NULL);
+
+				CreateWindow(TEXT("button"),
+					TEXT("Config"),
+					WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+					0, 40,
+					60, 40,
+					hWnd,
+					(HMENU)ID_CONFIGBUTTON,
+					((LPCREATESTRUCT)lParam)->hInstance,
+					NULL);
+
 			}
 		}
+		else {
+			logLastError(L"Couldn't load dll");
+		}
+	}
 		
-		break;
+	break;
+
 	case WM_COMMAND:
-		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
+	{
+		int wmId = LOWORD(wParam);
+		int wmEvent = HIWORD(wParam);
 		// Parse the menu selections:
 		switch (wmId)
 		{
@@ -242,15 +260,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
+	}
 		break;
 	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
 		// TODO: Add any drawing code here...
 		EndPaint(hWnd, &ps);
-		break;
+	}
+	break;
 	case WM_DESTROY:
+	{
+		LONG_PTR long_ptr = SetWindowLongPtr(hWnd, GWLP_USERDATA, NULL);
+		std::shared_ptr<WindowState> *ptr = reinterpret_cast<std::shared_ptr<WindowState> *>(long_ptr);
+		std::shared_ptr<WindowState> windowState(*ptr);
+		delete ptr;
+			
+			
+		OutputDebugString(L"DESTROY: ");
+		OutputDebugString(windowState->why.c_str());
+		OutputDebugString(L"\n");
+
 		PostQuitMessage(0);
-		break;
+	}
+	break;
+
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
