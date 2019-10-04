@@ -27,7 +27,7 @@ LANGUAGE 9, 1
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 
-IDI_DLLTEST       ICON         "host.ico"
+IDI_HOST       ICON         "host.ico"
 IDI_SMALL               ICON         "small.ico"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -35,7 +35,7 @@ IDI_SMALL               ICON         "small.ico"
 // Menu
 //
 
-IDC_DLLTEST MENU
+IDC_HOST MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -53,7 +53,7 @@ END
 // Accelerator
 //
 
-IDC_DLLTEST ACCELERATORS
+IDC_HOST ACCELERATORS
 BEGIN
     "?",            IDM_ABOUT,              ASCII,  ALT
     "/",            IDM_ABOUT,              ASCII,  ALT
@@ -130,7 +130,7 @@ END
 
 STRINGTABLE
 BEGIN
-   IDC_DLLTEST   "DLLTEST"
+   IDC_HOST   "HOST"
    IDS_APP_TITLE       "host"
 END
 
