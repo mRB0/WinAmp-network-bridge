@@ -40,7 +40,12 @@ std::shared_ptr<MainWindow> MainWindow::getWindowClass(HWND hWnd)
 {
 	LONG_PTR long_ptr = GetWindowLongPtr(hWnd, GWLP_USERDATA);
 	std::shared_ptr<MainWindow> *ptr = reinterpret_cast<std::shared_ptr<MainWindow> *>(long_ptr);
-	return *ptr;
+	if (ptr == NULL) {
+		return std::shared_ptr<MainWindow>();
+	}
+	else {
+		return *ptr;
+	}
 }
 
 LRESULT CALLBACK MainWindow::staticWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -48,11 +53,12 @@ LRESULT CALLBACK MainWindow::staticWndProc(HWND hWnd, UINT message, WPARAM wPara
 	if (message == WM_CREATE) {
 		std::shared_ptr<MainWindow> *window_class_from_create_struct = reinterpret_cast<std::shared_ptr<MainWindow> *>((reinterpret_cast<CREATESTRUCT*>(lParam))->lpCreateParams);
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(window_class_from_create_struct));
-
-		std::shared_ptr<MainWindow> ws(*window_class_from_create_struct);
 	}
 
-	LRESULT result = getWindowClass(hWnd)->wndProc(hWnd, message, wParam, lParam);
+	LRESULT result = 0;
+
+	std::shared_ptr<MainWindow> windowClass = getWindowClass(hWnd);
+	result = windowClass->wndProc(hWnd, message, wParam, lParam);
 
 	if (message == WM_DESTROY) {
 		LONG_PTR long_ptr = SetWindowLongPtr(hWnd, GWLP_USERDATA, NULL);
@@ -64,9 +70,23 @@ LRESULT CALLBACK MainWindow::staticWndProc(HWND hWnd, UINT message, WPARAM wPara
 	return result;
 }
 
-MainWindow::MainWindow(HINSTANCE hInstance)
-	: hInstance(hInstance)
+MainWindow::MainWindow(HINSTANCE hInstance, int nCmdShow)
+	: hInstance(hInstance), nCmdShow(nCmdShow)
 {
+	registerWindowClass(hInstance);
+
+	hWnd = CreateWindow(szWindowClassName, _T("temp title, use resource"), WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, reinterpret_cast<void*>(new std::shared_ptr<MainWindow>(this)));
+}
+
+void MainWindow::show()
+{
+	ShowWindow(hWnd, nCmdShow);
+}
+
+void MainWindow::update() 
+{
+	UpdateWindow(hWnd);
 }
 
 LRESULT CALLBACK MainWindow::wndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
