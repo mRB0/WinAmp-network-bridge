@@ -8,98 +8,64 @@
 #include <string>
 #include <sstream>
 #include <memory>
-#include "MainWindow.h"
-#include <winamp/in2.h>
+#include <list>
+#include <locale>
+#include <codecvt>
 
-#define MAX_LOADSTRING 100
+#include "wxx_wincore.h"
+
+#include "Plugin.h"
+#include "finally.h"
+#include <winamp/in2.h>
+#include "util.h"
 
 typedef In_Module *(__stdcall *GetInModuleFn)(void);
 
-// Global Variables:
-static HINSTANCE hInst;								// current instance
-TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
-
-// Forward declarations of functions included in this code module:
-BOOL				InitInstance(HINSTANCE, int);
-
-static std::shared_ptr<MainWindow> mainWindow;
-
-int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+class CView : public CWnd
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
+public:
 
- 	// TODO: Place code here.
-	MSG msg;
-	HACCEL hAccelTable;
+	CView() {
+		std::wstring const pluginPath(L"C:\\Users\\mrb\\Documents\\code\\winamp-network-bridge\\plugins");
+		std::wstring const fileSpec(L"\\in_*.dll");
 
-	// Initialize global strings
-	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_HOST, szWindowClass, MAX_LOADSTRING);
+		auto pluginFiles = listFiles(pluginPath, fileSpec);
+		
+		std::list<std::shared_ptr<Plugin>> plugins;
 
-	// Perform application initialization:
-	if (!InitInstance (hInstance, nCmdShow))
-	{
-		return FALSE;
-	}
+		for (auto const &filename : pluginFiles) {
+			auto plugin = std::make_shared<Plugin>(this->GetHwnd(), filename);
+			plugins.push_back(plugin);
+			
+			odslog(filename << L": " << plugin->description() << std::endl);
+			odslog(L"    unicode: " << plugin->isUnicode() << std::endl);
+			odslog(L"    uses output plug: " << plugin->getPluginModule()->UsesOutputPlug << std::endl);
+			odslog(L"    file extensions:" << std::endl);
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_HOST));
-
-	// Main message loop:
-	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			for (auto const &pluginExtension : plugin->extensions()) {
+				odslog(L"        " << pluginExtension.extension << L" (" << pluginExtension.description << L")" << std::endl);
+			}
 		}
 	}
 
-	return (int) msg.wParam;
-}
+	virtual ~CView() {}
+	virtual void OnDestroy() { PostQuitMessage(0); }	// Ends the application
 
-//
-//   FUNCTION: InitInstance(HINSTANCE, int)
-//
-//   PURPOSE: Saves instance handle and creates main window
-//
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+	virtual void OnCreate() {
+
+	}
+};
+
+
+int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+	// Start Win32++
+	CWinApp app;
 
-   mainWindow = std::make_shared<MainWindow>(hInstance, nCmdShow);
-   mainWindow->show();
-   mainWindow->update();
+	// Create our view window
+	CView mainWindow;
+	mainWindow.Create();
 
-   return TRUE;
-}
-
-void logLastError(std::wstring const &text) {
-    LPVOID lpMsgBuf;
-    DWORD dw = GetLastError(); 
-
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
-
-	std::wostringstream dbg;
-	dbg << L"Error: " << text << ": " << (LPTSTR)lpMsgBuf << std::endl;
-	OutputDebugStringW(dbg.str().c_str());
-
-	LocalFree(lpMsgBuf);
+	// Run the application
+	return app.Run();
 }
