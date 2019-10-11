@@ -1,0 +1,14 @@
+[package]
+name = "hostrs"
+version = "0.1.0"
+authors = ["mrb"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libloading = "0.5"
+encoding_rs = "0.8.20"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "std", "libloaderapi"] }
