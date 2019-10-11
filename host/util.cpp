@@ -3,8 +3,6 @@
 
 #include "wxx_wincore.h"
 
-#include <locale>
-#include <codecvt>
 #include "finally.h"
 
 std::wstring getErrorDescription(DWORD error) {
@@ -14,18 +12,11 @@ std::wstring getErrorDescription(DWORD error) {
 	return std::wstring(str.c_str());
 }
 
-std::string copyWstringToStringSameEncoding(std::wstring const &wstring) {
-	using convertType = std::codecvt_utf16<wchar_t>;
-
-	std::wstring_convert<convertType, wchar_t> converter;
-	return std::string(converter.to_bytes(wstring));
-}
-
 std::exception logError(DWORD error) {
 	auto errorDescription = getErrorDescription(error);
 	odslog(L"Error: " << errorDescription << std::endl);
 
-	return std::exception(copyWstringToStringSameEncoding(errorDescription).c_str());
+	return std::exception(wstringToMultiByte(errorDescription, CP_ACP).c_str());
 }
 
 std::list<std::wstring> listFiles(std::wstring const &directory, std::wstring const &fileSpec) {
@@ -61,6 +52,10 @@ std::list<std::wstring> listFiles(std::wstring const &directory, std::wstring co
 }
 
 std::wstring multiByteToWstring(char const *input, UINT codepage) {
+	if (input[0] == '\0') {
+		return std::wstring();
+	}
+
 	int requiredLength = MultiByteToWideChar(
 		codepage,
 		0,
@@ -91,4 +86,45 @@ std::wstring multiByteToWstring(char const *input, UINT codepage) {
 	}
 
 	return std::wstring(output);
+}
+
+std::string wstringToMultiByte(std::wstring const &input, UINT codepage) {
+	if (input.empty()) {
+		return std::string();
+	}
+
+	int requiredLength = WideCharToMultiByte(
+		codepage,
+		0,
+		input.c_str(),
+		-1,
+		NULL,
+		0,
+		NULL,
+		NULL
+	);
+
+	if (requiredLength == 0) {
+		throw logError(GetLastError());
+	}
+
+	auto output = new char[requiredLength];
+	auto _outputDeleter = finally([output] { delete[] output; });
+
+	int result = WideCharToMultiByte(
+		codepage,
+		0,
+		input.c_str(),
+		-1,
+		output,
+		requiredLength,
+		NULL,
+		NULL
+	);
+
+	if (result == 0) {
+		throw logError(GetLastError());
+	}
+
+	return std::string(output);
 }
