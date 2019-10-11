@@ -97,9 +97,6 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="finally.h" />
     <ClInclude Include="host.h" />
     <ClInclude Include="Plugin.h" />

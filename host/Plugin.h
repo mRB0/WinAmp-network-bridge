@@ -9,20 +9,39 @@ struct PluginFileExtension {
 	std::wstring description;
 };
 
+struct PluginFileInfo {
+	std::wstring title;
+	int lengthInMs;
+};
+
 class Plugin
 {
 public:
 	Plugin(HWND mainWindowHandle, std::wstring libraryPath);
 	~Plugin();
 
-	In_Module const *getPluginModule();
+	In_Module const *pluginModule();
 
 	std::wstring description();
 	bool isUnicode();
 
 	std::list<PluginFileExtension> extensions();
+	PluginFileInfo getFileInfo(std::wstring const &path);
 
 private:
-	HMODULE pluginHandle;
-	In_Module *pluginModule;
+	HMODULE _pluginHandle;
+	In_Module *_pluginModule;
+	std::list<PluginFileExtension> _extensions;
+
+	void parseExtensions();
+
+	// Load a string from the plugin that's interpreted as unicode if the plugin is a unicode plugin; otherwise, you need to specify what codepage to expect.
+	// str should be either (wchar_t *) or (char *), or (in_char) using the WinAmp plugin notation.
+	std::wstring loadMaybeUnicodeString(void const *str, UINT codepage);
+
+	// Get a string to be passed to the plugin.
+	// Returns a (wchar_t *) if the plugin is a unicode plugin, or (char *) otherwise; aka (in_char) using the WinAmp plugin notation.
+	//
+	// The caller will take ownership of the returned pointer, and will need to free() it to avoid a memory leak.
+	void * getMaybeMultiByteString(std::wstring const &str, UINT codepage);
 };
