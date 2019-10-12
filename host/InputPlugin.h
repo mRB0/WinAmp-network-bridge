@@ -15,11 +15,13 @@ struct PluginFileInfo {
 	int lengthInMs;
 };
 
-class Plugin
+class OutputPlugin;
+
+class InputPlugin
 {
 public:
-	Plugin(HWND mainWindowHandle, std::wstring libraryPath);
-	~Plugin();
+	InputPlugin(HWND mainWindowHandle, std::wstring libraryPath, std::shared_ptr<OutputPlugin> outputPlugin);
+	~InputPlugin();
 
 	In_Module *pluginModule();
 
@@ -32,9 +34,11 @@ public:
 	void playFile(std::wstring const &path);
 
 private:
-	HMODULE _pluginHandle;
+	std::shared_ptr<HMODULE> _pluginHandle;
+
 	In_Module *_pluginModule;
 	std::list<PluginFileExtension> _extensions;
+	std::shared_ptr<OutputPlugin> _outputPlugin;
 
 	void parseExtensions();
 

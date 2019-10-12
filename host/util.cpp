@@ -38,7 +38,13 @@ std::list<std::wstring> listFiles(std::wstring const &directory, std::wstring co
 		}
 	}
 
-	auto pHandle = std::shared_ptr<HANDLE>(&handle, [](HANDLE *ptr) { FindClose(*ptr); });
+	auto pHandle = std::shared_ptr<HANDLE>(
+		new HANDLE{ handle },
+		[](HANDLE *ptr) {
+			FindClose(*ptr); 
+			delete ptr;
+		}
+	);
 
 	do {
 		fileList.push_back(directory + L"\\" + std::wstring(findResult.cFileName));

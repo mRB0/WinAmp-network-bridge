@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "Plugin.h"
+#include "InputPlugin.h"
 
 #include <iostream>
 #include <memory>
@@ -7,6 +7,7 @@
 #include <winamp/in2.h>
 
 #include "util.h"
+#include "OutputPlugin.h"
 
 // even for unicode plugins, many fields are not unicode, and I didn't see anywhere that the codepage was defined, so let's hope everyone used codepage 1252 for non-unicode strings
 static std::wstring winampStringToWstring(char const *input) {
@@ -15,37 +16,75 @@ static std::wstring winampStringToWstring(char const *input) {
 
 typedef In_Module *(__stdcall *GetInModuleFn)(void);
 
-Plugin::Plugin(HWND mainWindowHandle, std::wstring libraryPath)
+// WinAmp functions that we don't use, but need to supply to plugins.
+// Input plugins
+struct InputPluginFunctions {
+	static void SAVSAInit(int maxlatency_in_ms, int srate) {}
+	static void SAVSADeInit() {}
+	static void SAAddPCMData(void *PCMData, int nch, int bps, int timestamp) {}
+	static int SAGetMode() { return 1; }
+	static int SAAdd(void *data, int timestamp, int csa) { return 1; }
+	static void VSAAddPCMData(void *PCMData, int nch, int bps, int timestamp) {}
+	static int VSAGetMode(int *specNch, int *waveNch) { return 1; }
+	static int VSAAdd(void *data, int timestamp) { return 1; }
+	static void VSASetInfo(int srate, int nch) { }
+	static int dsp_isactive() { return 0; }
+	static int dsp_dosamples(short int *samples, int numsamples, int bps, int nch, int srate) { return 0; }
+	static void SetInfo(int bitrate, int srate, int stereo, int synched) {}
+};
+
+InputPlugin::InputPlugin(HWND mainWindowHandle, std::wstring libraryPath, std::shared_ptr<OutputPlugin> outputPlugin)
+	: _outputPlugin(outputPlugin)
 {
-	_pluginHandle = LoadLibraryW(libraryPath.c_str());
-	GetInModuleFn getInModuleFn = (GetInModuleFn)GetProcAddress(_pluginHandle, "winampGetInModule2");
+	_pluginHandle = std::shared_ptr<HMODULE>(
+		new HMODULE{ LoadLibraryW(libraryPath.c_str()) }, 
+		[](HMODULE *ptr) { 
+			FreeLibrary(*ptr); 
+			delete ptr; 
+		}
+	);
+	
+	GetInModuleFn getInModuleFn = (GetInModuleFn)GetProcAddress(*_pluginHandle, "winampGetInModule2");
 
 	_pluginModule = getInModuleFn();
 	_pluginModule->hMainWindow = mainWindowHandle;
-	_pluginModule->hDllInstance = _pluginHandle;
+	_pluginModule->hDllInstance = *_pluginHandle;
+	_pluginModule->SAVSAInit = InputPluginFunctions::SAVSAInit;
+	_pluginModule->SAVSADeInit = InputPluginFunctions::SAVSADeInit;
+	_pluginModule->SAAddPCMData = InputPluginFunctions::SAAddPCMData;
+	_pluginModule->SAGetMode = InputPluginFunctions::SAGetMode;
+	_pluginModule->SAAdd = InputPluginFunctions::SAAdd;
+	_pluginModule->VSAAddPCMData = InputPluginFunctions::VSAAddPCMData;
+	_pluginModule->VSAGetMode = InputPluginFunctions::VSAGetMode;
+	_pluginModule->VSAAdd = InputPluginFunctions::VSAAdd;
+	_pluginModule->VSASetInfo = InputPluginFunctions::VSASetInfo;
+	_pluginModule->dsp_isactive = InputPluginFunctions::dsp_isactive;
+	_pluginModule->dsp_dosamples = InputPluginFunctions::dsp_dosamples;
+	_pluginModule->SetInfo = InputPluginFunctions::SetInfo;
+	_pluginModule->outMod = outputPlugin->getOutModule();
 
 	parseExtensions();
 
 	_pluginModule->Init();
 }
 
-In_Module *Plugin::pluginModule() {
+In_Module *InputPlugin::pluginModule() {
 	return _pluginModule;
 }
 
-std::wstring Plugin::description() {
+std::wstring InputPlugin::description() {
 	return winampStringToWstring(_pluginModule->description);
 }
 
-bool Plugin::isUnicode() {
+bool InputPlugin::isUnicode() {
 	return (_pluginModule->version & IN_UNICODE) == IN_UNICODE;
 }
 
-std::list<PluginFileExtension> Plugin::extensions() {
+std::list<PluginFileExtension> InputPlugin::extensions() {
 	return _extensions;
 }
 
-PluginFileInfo Plugin::getFileInfo(std::wstring const &path) {
+PluginFileInfo InputPlugin::getFileInfo(std::wstring const &path) {
 	// for non-unicode plugins, we use the ANSI charset for the filename, but windows-1252 for the title
 
 	int lengthInMs;
@@ -72,12 +111,12 @@ PluginFileInfo Plugin::getFileInfo(std::wstring const &path) {
 	return PluginFileInfo{ title, lengthInMs };
 }
 
-void Plugin::playFile(std::wstring const &path) {
+void InputPlugin::playFile(std::wstring const &path) {
 	std::shared_ptr<void> path_c(getMaybeMultiByteString(path, CP_ACP));
 	_pluginModule->Play(reinterpret_cast<char const *>(path_c.get()));
 }
 
-std::wstring Plugin::loadMaybeUnicodeString(void const *str, UINT codepage) {
+std::wstring InputPlugin::loadMaybeUnicodeString(void const *str, UINT codepage) {
 	if (isUnicode()) {
 		return std::wstring(reinterpret_cast<wchar_t const *>(str));
 	}
@@ -86,7 +125,7 @@ std::wstring Plugin::loadMaybeUnicodeString(void const *str, UINT codepage) {
 	}
 }
 
-std::shared_ptr<void> Plugin::getMaybeMultiByteString(std::wstring const &str, UINT codepage) {
+std::shared_ptr<void> InputPlugin::getMaybeMultiByteString(std::wstring const &str, UINT codepage) {
 	if (isUnicode()) {
 		return std::shared_ptr<void>(_wcsdup(str.c_str()), free);
 	} else {
@@ -94,7 +133,7 @@ std::shared_ptr<void> Plugin::getMaybeMultiByteString(std::wstring const &str, U
 	}
 }
 
-void Plugin::parseExtensions() {
+void InputPlugin::parseExtensions() {
 	// from the header file:
 	//     char *FileExtensions;		// "mp3\0Layer 3 MPEG\0mp2\0Layer 2 MPEG\0mpg\0Layer 1 MPEG\0"
 	// there's an implied additional null-terminator to indicate the end of the list, and many plugins use ; to handle multiple file types, eg. "vgm;vgz\0VGM file\0"
@@ -132,8 +171,8 @@ void Plugin::parseExtensions() {
 	}
 }
 
-Plugin::~Plugin()
+InputPlugin::~InputPlugin()
 {
 	_pluginModule->Quit();
-	FreeLibrary(_pluginHandle);
+	FreeLibrary(*_pluginHandle);
 }
