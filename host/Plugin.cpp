@@ -29,7 +29,7 @@ Plugin::Plugin(HWND mainWindowHandle, std::wstring libraryPath)
 	_pluginModule->Init();
 }
 
-In_Module const *Plugin::pluginModule() {
+In_Module *Plugin::pluginModule() {
 	return _pluginModule;
 }
 
@@ -70,6 +70,11 @@ PluginFileInfo Plugin::getFileInfo(std::wstring const &path) {
 	std::wstring title = loadMaybeUnicodeString(title_c.get(), 1252);
 
 	return PluginFileInfo{ title, lengthInMs };
+}
+
+void Plugin::playFile(std::wstring const &path) {
+	std::shared_ptr<void> path_c(getMaybeMultiByteString(path, CP_ACP));
+	_pluginModule->Play(reinterpret_cast<char const *>(path_c.get()));
 }
 
 std::wstring Plugin::loadMaybeUnicodeString(void const *str, UINT codepage) {

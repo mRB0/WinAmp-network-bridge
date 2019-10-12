@@ -21,13 +21,15 @@ public:
 	Plugin(HWND mainWindowHandle, std::wstring libraryPath);
 	~Plugin();
 
-	In_Module const *pluginModule();
+	In_Module *pluginModule();
 
 	std::wstring description();
 	bool isUnicode();
 
 	std::list<PluginFileExtension> extensions();
 	PluginFileInfo getFileInfo(std::wstring const &path);
+
+	void playFile(std::wstring const &path);
 
 private:
 	HMODULE _pluginHandle;
