@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "util.h"
 
-#include "wxx_wincore.h"
+#include <memory>
 
-#include "finally.h"
+#include "wxx_wincore.h"
 
 std::wstring getErrorDescription(DWORD error) {
 	CStringW str;
@@ -27,6 +27,7 @@ std::list<std::wstring> listFiles(std::wstring const &directory, std::wstring co
 	auto fileList = std::list<std::wstring>();
 
 	HANDLE handle = FindFirstFileW(searchPath.c_str(), &findResult);
+
 	if (handle == INVALID_HANDLE_VALUE) {
 		DWORD lastError = GetLastError();
 		if (lastError == ERROR_FILE_NOT_FOUND) {
@@ -37,7 +38,7 @@ std::list<std::wstring> listFiles(std::wstring const &directory, std::wstring co
 		}
 	}
 
-	auto _deleter = finally([handle] { FindClose(handle); });
+	auto pHandle = std::shared_ptr<HANDLE>(&handle, [](HANDLE *ptr) { FindClose(*ptr); });
 
 	do {
 		fileList.push_back(directory + L"\\" + std::wstring(findResult.cFileName));
@@ -69,15 +70,14 @@ std::wstring multiByteToWstring(char const *input, UINT codepage) {
 		throw logError(GetLastError());
 	}
 
-	auto output = new wchar_t[requiredLength];
-	auto _outputDeleter = finally([output] { delete[] output; });
+	std::shared_ptr<wchar_t> output(new wchar_t[requiredLength], std::default_delete<wchar_t[]>());
 
 	int result = MultiByteToWideChar(
 		codepage,
 		0,
 		input,
 		-1,
-		output,
+		output.get(),
 		requiredLength
 	);
 
@@ -85,7 +85,7 @@ std::wstring multiByteToWstring(char const *input, UINT codepage) {
 		throw logError(GetLastError());
 	}
 
-	return std::wstring(output);
+	return std::wstring(output.get());
 }
 
 std::string wstringToMultiByte(std::wstring const &input, UINT codepage) {
@@ -108,15 +108,14 @@ std::string wstringToMultiByte(std::wstring const &input, UINT codepage) {
 		throw logError(GetLastError());
 	}
 
-	auto output = new char[requiredLength];
-	auto _outputDeleter = finally([output] { delete[] output; });
+	std::shared_ptr<char> output(new char[requiredLength], std::default_delete<char[]>());
 
 	int result = WideCharToMultiByte(
 		codepage,
 		0,
 		input.c_str(),
 		-1,
-		output,
+		output.get(),
 		requiredLength,
 		NULL,
 		NULL
@@ -126,5 +125,5 @@ std::string wstringToMultiByte(std::wstring const &input, UINT codepage) {
 		throw logError(GetLastError());
 	}
 
-	return std::string(output);
+	return std::string(output.get());
 }
