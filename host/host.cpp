@@ -13,7 +13,6 @@
 #include "wxx_wincore.h"
 
 #include "Plugin.h"
-#include "finally.h"
 #include <winamp/in2.h>
 #include "util.h"
 
@@ -80,6 +79,9 @@ public:
 			odslog(L"        dsp_dosamples = 0x" << plugin->pluginModule()->dsp_dosamples << std::endl);
 			odslog(L"        SetInfo = 0x" << plugin->pluginModule()->SetInfo << std::endl);
 		}
+
+		auto fileInfo = findPluginForExtension(plugins, L"nsf")->getFileInfo(L"K:\\temp\\test.nsf");
+		odslog(L"Title is " << fileInfo.title << std::endl);
 	}
 
 	virtual ~CView() {}

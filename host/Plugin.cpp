@@ -2,11 +2,11 @@
 #include "Plugin.h"
 
 #include <iostream>
+#include <memory>
 
 #include <winamp/in2.h>
 
 #include "util.h"
-#include "finally.h"
 
 // even for unicode plugins, many fields are not unicode, and I didn't see anywhere that the codepage was defined, so let's hope everyone used codepage 1252 for non-unicode strings
 static std::wstring winampStringToWstring(char const *input) {
@@ -50,27 +50,24 @@ PluginFileInfo Plugin::getFileInfo(std::wstring const &path) {
 
 	int lengthInMs;
 	
-	void *title_c;
+	std::shared_ptr<void> title_c;
 
 	if (isUnicode()) {
-		title_c = new wchar_t[GETFILEINFO_TITLE_LENGTH];
+		title_c.reset(new wchar_t[GETFILEINFO_TITLE_LENGTH], std::default_delete<wchar_t[]>());
 	}
 	else {
-		title_c = new char[GETFILEINFO_TITLE_LENGTH];
+		title_c.reset(new char[GETFILEINFO_TITLE_LENGTH], std::default_delete<char[]>());
 	}
 
-	auto _deleteTitle_c = finally([title_c] { delete[] title_c; });
-
-	void *path_c = getMaybeMultiByteString(path, CP_ACP);
-	auto _freePath_c = finally([path_c] { free(path_c); });
+	std::shared_ptr<void> path_c(getMaybeMultiByteString(path, CP_ACP));
 
 	_pluginModule->GetFileInfo(
-		reinterpret_cast<char const *>(path_c),
-		reinterpret_cast<char *>(title_c),
+		reinterpret_cast<char const *>(path_c.get()),
+		reinterpret_cast<char *>(title_c.get()),
 		&lengthInMs
 	);
 
-	std::wstring title = loadMaybeUnicodeString(title_c, 1252);
+	std::wstring title = loadMaybeUnicodeString(title_c.get(), 1252);
 
 	return PluginFileInfo{ title, lengthInMs };
 }
@@ -84,11 +81,11 @@ std::wstring Plugin::loadMaybeUnicodeString(void const *str, UINT codepage) {
 	}
 }
 
-void * Plugin::getMaybeMultiByteString(std::wstring const &str, UINT codepage) {
+std::shared_ptr<void> Plugin::getMaybeMultiByteString(std::wstring const &str, UINT codepage) {
 	if (isUnicode()) {
-		return _wcsdup(str.c_str());
+		return std::shared_ptr<void>(_wcsdup(str.c_str()), free);
 	} else {
-		return _strdup(wstringToMultiByte(str, codepage).c_str());
+		return std::shared_ptr<void>(_strdup(wstringToMultiByte(str, codepage).c_str()), free);
 	}
 }
 

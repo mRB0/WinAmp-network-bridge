@@ -97,7 +97,6 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="finally.h" />
     <ClInclude Include="host.h" />
     <ClInclude Include="Plugin.h" />
     <ClInclude Include="stdafx.h" />

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <list>
+#include <memory>
 #include <Winamp/IN2.H>
 
 struct PluginFileExtension {
@@ -37,11 +38,11 @@ private:
 
 	// Load a string from the plugin that's interpreted as unicode if the plugin is a unicode plugin; otherwise, you need to specify what codepage to expect.
 	// str should be either (wchar_t *) or (char *), or (in_char) using the WinAmp plugin notation.
+	// codepage is the same as the MultiByteToWideChar argument with a similar name.
 	std::wstring loadMaybeUnicodeString(void const *str, UINT codepage);
 
 	// Get a string to be passed to the plugin.
-	// Returns a (wchar_t *) if the plugin is a unicode plugin, or (char *) otherwise; aka (in_char) using the WinAmp plugin notation.
-	//
-	// The caller will take ownership of the returned pointer, and will need to free() it to avoid a memory leak.
-	void * getMaybeMultiByteString(std::wstring const &str, UINT codepage);
+	// The managed pointer is a (wchar_t *) if the plugin is a unicode plugin, or (char *) otherwise; aka (in_char) using the WinAmp plugin notation.
+	// codepage is the same as the WideCharToMultiByte argument with a similar name.
+	std::shared_ptr<void> getMaybeMultiByteString(std::wstring const &str, UINT codepage);
 };
