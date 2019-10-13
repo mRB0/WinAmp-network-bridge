@@ -63,9 +63,9 @@ InputPlugin::InputPlugin(HWND mainWindowHandle, std::wstring libraryPath, std::s
 	_pluginModule->SetInfo = InputPluginFunctions::SetInfo;
 	_pluginModule->outMod = outputPlugin->getOutModule();
 
-	parseExtensions();
-
 	_pluginModule->Init();
+
+	parseExtensions();
 }
 
 In_Module *InputPlugin::pluginModule() {
