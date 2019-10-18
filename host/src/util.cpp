@@ -5,7 +5,7 @@
 #include <ios>
 #include <stdexcept>
 
-#include "wxx_wincore.h"
+#include <win32xx/wxx_wincore.h>
 
 std::wstring getErrorDescription(DWORD error) {
 	CStringW str;

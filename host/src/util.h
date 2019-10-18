@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "wxx_wincore.h"
+#include <win32xx/wxx_wincore.h>
 
 #define odslog(msg) { std::wstringstream ss; ss << msg; OutputDebugStringW(ss.str().c_str()); }
 
