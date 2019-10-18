@@ -10,9 +10,9 @@
 #include <memory>
 #include <list>
 
-#include "wxx_wincore.h"
-
+#include <win32xx/wxx_wincore.h>
 #include <winamp/in2.h>
+
 #include "util.h"
 #include "filelist.h"
 
