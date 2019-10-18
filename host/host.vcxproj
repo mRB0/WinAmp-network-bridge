@@ -99,6 +99,7 @@
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="filelist.h" />
     <ClInclude Include="host.h" />
     <ClInclude Include="OutputPlugin.h" />
     <ClInclude Include="RPCOutputPlugin.h" />
@@ -108,6 +109,7 @@
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="filelist.cpp" />
     <ClCompile Include="host.cpp" />
     <ClCompile Include="RPCOutputPlugin.cpp" />
     <ClCompile Include="InputPlugin.cpp" />

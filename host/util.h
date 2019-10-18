@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <string>
 
 #include "wxx_wincore.h"
@@ -9,9 +8,7 @@
 
 std::wstring getErrorDescription(DWORD error);
 
-std::exception logError(DWORD error);
-
-std::list<std::wstring> listFiles(std::wstring const &directory, std::wstring const &fileSpec);
+std::string logError(DWORD error);
 
 std::wstring multiByteToWstring(char const *input, UINT codepage);
 
