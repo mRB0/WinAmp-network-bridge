@@ -14,6 +14,7 @@
 
 #include <winamp/in2.h>
 #include "util.h"
+#include "filelist.h"
 
 #include "InputPlugin.h"
 #include "RPCOutputPlugin.h"
